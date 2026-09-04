@@ -1,0 +1,1078 @@
+# Bank-of-Bacolod-infrastructure
+import json
+import os
+import re
+from pathlib import Path
+from typing import Dict, List, Tuple
+
+
+
+  "package.json": {
+  "name": "bank-of-bacolod-mobile",
+  "version": "1.0.0",
+  "private": true,
+  "main": "expo-router/entry",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
+    "web": "expo start --web",
+    "lint": "expo lint"
+  },
+  "dependencies": {
+    "@expo/vector-icons": "^14.0.2",
+    "@react-native-async-storage/async-storage": "^1.23.1",
+    "@supabase/supabase-js": "^2.45.4",
+    "expo": "~51.0.28",
+    "expo-constants": "~16.0.2",
+    "expo-device": "~6.0.2",
+    "expo-linking": "~6.3.1",
+    "expo-notifications": "~0.28.17",
+    "expo-router": "~3.5.23",
+    "expo-status-bar": "~1.12.1",
+    "react": "18.2.0",
+    "react-native": "0.74.5",
+    "react-native-safe-area-context": "4.10.5",
+    "react-native-screens": "~3.31.1"
+  },
+  "devDependencies": {
+    "@types/react": "~18.2.79",
+    "typescript": "~5.3.3"
+  }
+}
+""",
+    "app.json": """{
+  "expo": {
+    "name": "Bank of Bacolod",
+    "slug": "bank-of-bacolod-mobile",
+    "scheme": "bankofbacolod",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "plugins": [
+      "expo-router",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#0f5fff"
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.bankofbacolod.mobile"
+    },
+    "android": {
+      "package": "com.bankofbacolod.mobile",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "ad1811c1-0b9c-41fb-9428-3193df6f8b6a"
+      }
+    }
+  }
+}
+""",
+    "eas.json": """{
+  "cli": {
+    "version": ">= 10.0.0"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal"
+    },
+    "preview": {
+      "distribution": "internal"
+    },
+    "production": {
+      "autoIncrement": true
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}
+""",
+    "babel.config.js": """module.exports = function (api) {
+  api.cache(true);
+  return {
+    presets: ["babel-preset-expo"]
+  };
+};
+""",
+    "tsconfig.json": """{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    }
+  }
+}
+""",
+    "src/types/index.ts": """export type ServiceStatus = "ACTIVE" | "INACTIVE" | "MAINTENANCE";
+export type CategoryType =
+  | "Business Services"
+  | "Cloud Services"
+  | "AI Agents"
+  | "Environments";
+
+export interface CatalogItem {
+  id: string;
+  name: string;
+  slug: string;
+  category: CategoryType;
+  description: string;
+  provider: string;
+  region: string;
+  status: ServiceStatus;
+  pricing: string;
+  featured: boolean;
+  created_at?: string;
+}
+
+export interface CloudComponent {
+  id: string;
+  name: string;
+  provider: string;
+  region: string;
+  status: ServiceStatus;
+  description: string;
+  created_at?: string;
+}
+
+export interface AgentEnvironment {
+  id: string;
+  name: string;
+  type: "Production" | "Research" | "DevOps";
+  summary: string;
+  agentCount: number;
+  status: ServiceStatus;
+  created_at?: string;
+}
+
+export interface ServiceRequestPayload {
+  service_id?: string;
+  service_name: string;
+  customer_name: string;
+  email: string;
+  notes?: string;
+}
+
+export interface UserProfile {
+  id: string;
+  email: string;
+}
+""",
+    "src/theme/colors.ts": """export const colors = {
+  primary: "#0f5fff",
+  primaryDark: "#0a3fb2",
+  background: "#f8fafc",
+  surface: "#ffffff",
+  text: "#0f172a",
+  muted: "#475569",
+  border: "#e2e8f0",
+  success: "#15803d",
+  warning: "#b45309",
+  danger: "#b91c1c"
+};
+""",
+    if (!env.supabaseUrl || !env.supabaseAnonKey) {
+  console.warn("Supabase environment variables are missing.");
+}
+""",
+    "src/lib/supabase.ts": """import AsyncStorage from "@react-native-async-storage/async-storage";
+import { createClient } from "@supabase/supabase-js";
+import { env } from "./env";
+
+export const supabase = createClient(env.supabaseUrl, env.supabaseAnonKey, {
+  auth: {
+    storage: AsyncStorage,
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: false
+  }
+});
+""",
+    "src/lib/notifications.ts": """import * as Device from "expo-device";
+import * as Notifications from "expo-notifications";
+import { Platform } from "react-native";
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false
+  })
+});
+
+export async function registerForPushNotificationsAsync() {
+  if (!Device.isDevice) return null;
+
+  const { status: existingStatus } = await Notifications.getPermissionsAsync();
+  let finalStatus = existingStatus;
+
+  if (existingStatus !== "granted") {
+    const { status } = await Notifications.requestPermissionsAsync();
+    finalStatus = status;
+  }
+
+  if (finalStatus !== "granted") {
+    return null;
+  }
+
+  if (Platform.OS === "android") {
+    await Notifications.setNotificationChannelAsync("default", {
+      name: "default",
+      importance: Notifications.AndroidImportance.MAX
+    });
+  }
+
+  const token = await Notifications.getExpoPushTokenAsync();
+  return token.data;
+}
+""",
+    "src/services/notificationService.ts": """import { registerForPushNotificationsAsync } from "../lib/notifications";
+
+export async function initializePushNotifications() {
+  try {
+    const token = await registerForPushNotificationsAsync();
+    return token;
+  } catch (error) {
+    console.error("Push notification registration failed", error);
+    return null;
+  }
+}
+""",
+    "src/hooks/useNotifications.ts": """import { useEffect, useState } from "react";
+import { initializePushNotifications } from "../services/notificationService";
+
+export function useNotifications() {
+  const [pushToken, setPushToken] = useState<string | null>(null);
+
+  useEffect(() => {
+    initializePushNotifications().then(setPushToken);
+  }, []);
+
+  return { pushToken };
+}
+""",
+    "src/providers/AuthProvider.tsx": """import { Session } from "@supabase/supabase-js";
+import { createContext, useEffect, useMemo, useState } from "react";
+import { supabase } from "../lib/supabase";
+
+type AuthContextType = {
+  session: Session | null;
+  loading: boolean;
+};
+
+export const AuthContext = createContext<AuthContextType>({
+  session: null,
+  loading: true
+});
+
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [session, setSession] = useState<Session | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session);
+      setLoading(false);
+    });
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, []);
+
+  const value = useMemo(() => ({ session, loading }), [session, loading]);
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+""",
+    "src/hooks/useAuth.ts": """import { useContext } from "react";
+import { AuthContext } from "../providers/AuthProvider";
+
+export function useAuth() {
+  return useContext(AuthContext);
+}
+""",
+    "src/services/authService.ts": """import { supabase } from "../lib/supabase";
+
+export async function signIn(email: string, password: string) {
+  return supabase.auth.signInWithPassword({ email, password });
+}
+
+export async function signUp(email: string, password: string) {
+  return supabase.auth.signUp({ email, password });
+}
+
+export async function signOut() {
+  return supabase.auth.signOut();
+}
+""",
+    "src/services/catalogService.ts": """import { supabase } from "../lib/supabase";
+import { AgentEnvironment, CatalogItem, CloudComponent } from "../types";
+
+export async function fetchCatalogItems(): Promise<CatalogItem[]> {
+  const { data, error } = await supabase
+    .from("catalog_items")
+    .select("*")
+    .order("name", { ascending: true });
+
+  if (error) throw error;
+  return data as CatalogItem[];
+}
+
+export async function fetchCatalogItemBySlug(slug: string): Promise<CatalogItem | null> {
+  const { data, error } = await supabase
+    .from("catalog_items")
+    .select("*")
+    .eq("slug", slug)
+    .single();
+
+  if (error) return null;
+  return data as CatalogItem;
+}
+
+export async function fetchCloudComponents(): Promise<CloudComponent[]> {
+  const { data, error } = await supabase
+    .from("cloud_components")
+    .select("*")
+    .order("name", { ascending: true });
+
+  if (error) throw error;
+  return data as CloudComponent[];
+}
+
+export async function fetchAgentEnvironments(): Promise<AgentEnvironment[]> {
+  const { data, error } = await supabase
+    .from("agent_environments")
+    .select("*")
+    .order("name", { ascending: true });
+
+  if (error) throw error;
+  return data as AgentEnvironment[];
+}
+""",
+    "src/services/requestService.ts": """import { supabase } from "../lib/supabase";
+import { ServiceRequestPayload } from "../types";
+
+export async function submitServiceRequest(payload: ServiceRequestPayload) {
+  const { data, error } = await supabase.from("service_requests").insert(payload).select().single();
+  if (error) throw error;
+  return data;
+}
+""",
+    "src/hooks/useCatalog.ts": """import { useEffect, useState } from "react";
+import { fetchCatalogItems } from "../services/catalogService";
+import { CatalogItem } from "../types";
+
+export function useCatalog() {
+  const [data, setData] = useState<CatalogItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchCatalogItems()
+      .then(setData)
+      .finally(() => setLoading(false));
+  }, []);
+
+  return { data, loading };
+}
+""",
+    "src/hooks/useCloudComponents.ts": """import { useEffect, useState } from "react";
+import { fetchCloudComponents } from "../services/catalogService";
+import { CloudComponent } from "../types";
+
+export function useCloudComponents() {
+  const [data, setData] = useState<CloudComponent[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchCloudComponents()
+      .then(setData)
+      .finally(() => setLoading(false));
+  }, []);
+
+  return { data, loading };
+}
+""",
+    "src/hooks/useAgents.ts": """import { useEffect, useState } from "react";
+import { fetchAgentEnvironments } from "../services/catalogService";
+import { AgentEnvironment } from "../types";
+
+export function useAgents() {
+  const [data, setData] = useState<AgentEnvironment[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchAgentEnvironments()
+      .then(setData)
+      .finally(() => setLoading(false));
+  }, []);
+
+  return { data, loading };
+}
+""",
+    "src/components/Screen.tsx": """import { ReactNode } from "react";
+import { SafeAreaView, ScrollView } from "react-native";
+import { colors } from "../theme/colors";
+
+export default function Screen({ children }: { children: ReactNode }) {
+  return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+      <ScrollView contentContainerStyle={{ padding: 16 }}>{children}</ScrollView>
+    </SafeAreaView>
+  );
+}
+""",
+    "src/components/SectionTitle.tsx": """import { Text, View } from "react-native";
+import { colors } from "../theme/colors";
+
+export default function SectionTitle({ title, subtitle }: { title: string; subtitle?: string }) {
+  return (
+    <View style={{ marginBottom: 16 }}>
+      <Text style={{ fontSize: 26, fontWeight: "700", color: colors.text }}>{title}</Text>
+      {subtitle ? (
+        <Text style={{ marginTop: 6, fontSize: 14, color: colors.muted }}>{subtitle}</Text>
+      ) : null}
+    </View>
+  );
+}
+""",
+    "src/components/AppButton.tsx": """import { Pressable, Text } from "react-native";
+import { colors } from "../theme/colors";
+
+export default function AppButton({
+  title,
+  onPress,
+  disabled
+}: {
+  title: string;
+  onPress: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      style={{
+        backgroundColor: disabled ? "#94a3b8" : colors.primary,
+        paddingVertical: 14,
+        borderRadius: 12,
+        alignItems: "center",
+        marginTop: 12
+      }}
+    >
+      <Text style={{ color: "#fff", fontWeight: "700" }}>{title}</Text>
+    </Pressable>
+  );
+}
+""",
+    "src/components/AppInput.tsx": """import { TextInput, Text, View, TextInputProps } from "react-native";
+import { colors } from "../theme/colors";
+
+export default function AppInput({
+  label,
+  ...props
+}: TextInputProps & { label: string }) {
+  return (
+    <View style={{ marginBottom: 14 }}>
+      <Text style={{ marginBottom: 8, color: colors.text, fontWeight: "600" }}>{label}</Text>
+      <TextInput
+        {...props}
+        style={{
+          borderWidth: 1,
+          borderColor: colors.border,
+          borderRadius: 12,
+          paddingHorizontal: 14,
+          paddingVertical: 12,
+          backgroundColor: colors.surface
+        }}
+      />
+    </View>
+  );
+}
+""",
+    "src/components/StatusBadge.tsx": """import { Text, View } from "react-native";
+import { colors } from "../theme/colors";
+
+export default function StatusBadge({ status }: { status: string }) {
+  const bg = status === "ACTIVE" ? "#dcfce7" : status === "MAINTENANCE" ? "#fef3c7" : "#fee2e2";
+  const fg = status === "ACTIVE" ? colors.success : status === "MAINTENANCE" ? colors.warning : colors.danger;
+
+  return (
+    <View style={{ backgroundColor: bg, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999 }}>
+      <Text style={{ color: fg, fontSize: 12, fontWeight: "700" }}>{status}</Text>
+    </View>
+  );
+}
+""",
+    "src/components/StatCard.tsx": """import { Text, View } from "react-native";
+import { colors } from "../theme/colors";
+
+export default function StatCard({ label, value }: { label: string; value: string }) {
+  return (
+    <View
+      style={{
+        flexBasis: "48%",
+        backgroundColor: colors.surface,
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: colors.border,
+        padding: 16,
+        marginBottom: 12
+      }}
+    >
+      <Text style={{ fontSize: 12, color: colors.muted }}>{label}</Text>
+      <Text style={{ fontSize: 22, color: colors.primaryDark, fontWeight: "700", marginTop: 6 }}>{value}</Text>
+    </View>
+  );
+}
+""",
+    "src/components/LoadingState.tsx": """import { ActivityIndicator, View } from "react-native";
+import { colors } from "../theme/colors";
+
+export default function LoadingState() {
+  return (
+    <View style={{ paddingVertical: 24 }}>
+      <ActivityIndicator size="large" color={colors.primary} />
+    </View>
+  );
+}
+""",
+    "src/components/EmptyState.tsx": """import { Text, View } from "react-native";
+import { colors } from "../theme/colors";
+
+export default function EmptyState({ message }: { message: string }) {
+  return (
+    <View
+      style={{
+        padding: 20,
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: colors.border,
+        backgroundColor: colors.surface
+      }}
+    >
+      <Text style={{ color: colors.muted, textAlign: "center" }}>{message}</Text>
+    </View>
+  );
+}
+""",
+    "src/components/ServiceCard.tsx": """import { Link } from "expo-router";
+import { Pressable, Text, View } from "react-native";
+import { CatalogItem } from "../types";
+import { colors } from "../theme/colors";
+import StatusBadge from "./StatusBadge";
+
+export default function ServiceCard({ item }: { item: CatalogItem }) {
+  return (
+    <View
+      style={{
+        backgroundColor: colors.surface,
+        borderWidth: 1,
+        borderColor: colors.border,
+        borderRadius: 18,
+        padding: 16,
+        marginBottom: 14
+      }}
+    >
+      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
+        <View style={{ flex: 1, paddingRight: 12 }}>
+          <Text style={{ fontSize: 18, fontWeight: "700", color: colors.text }}>{item.name}</Text>
+          <Text style={{ marginTop: 8, color: colors.muted }}>{item.description}</Text>
+        </View>
+        <StatusBadge status={item.status} />
+      </View>
+
+      <Text style={{ marginTop: 12, color: colors.muted, fontSize: 13 }}>Provider: {item.provider}</Text>
+      <Text style={{ marginTop: 4, color: colors.muted, fontSize: 13 }}>Region: {item.region}</Text>
+      <Text style={{ marginTop: 4, color: colors.muted, fontSize: 13 }}>Pricing: {item.pricing}</Text>
+
+      <Link href={`/services/${item.slug}` as any} asChild>
+        <Pressable
+          style={{
+            backgroundColor: colors.primary,
+            paddingVertical: 12,
+            borderRadius: 12,
+            marginTop: 14,
+            alignItems: "center"
+          }}
+        >
+          <Text style={{ color: "#fff", fontWeight: "700" }}>View Service</Text>
+        </Pressable>
+      </Link>
+    </View>
+  );
+}
+""",
+    "app/(tabs)/_layout.tsx": """import { Tabs } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { colors } from "../../src/theme/colors";
+
+export default function TabsLayout() {
+  return (
+    <Tabs
+      screenOptions={{
+        tabBarActiveTintColor: colors.primary,
+        headerTitleAlign: "center"
+      }}
+    >
+      <Tabs.Screen
+        name="index"
+        options={{
+          title: "Home",
+          tabBarIcon: ({ color, size }) => <Ionicons name="home-outline" color={color} size={size} />
+        }}
+      />
+      <Tabs.Screen
+        name="categories"
+        options={{
+          title: "Catalog",
+          tabBarIcon: ({ color, size }) => <Ionicons name="grid-outline" color={color} size={size} />
+        }}
+      />
+      <Tabs.Screen
+        name="cloud"
+        options={{
+          title: "Cloud",
+          tabBarIcon: ({ color, size }) => <Ionicons name="cloud-outline" color={color} size={size} />
+        }}
+      />
+      <Tabs.Screen
+        name="agents"
+        options={{
+          title: "Agents",
+          tabBarIcon: ({ color, size }) => <Ionicons name="hardware-chip-outline" color={color} size={size} />
+        }}
+      />
+      <Tabs.Screen
+        name="request"
+        options={{
+          title: "Request",
+          tabBarIcon: ({ color, size }) => <Ionicons name="mail-open-outline" color={color} size={size} />
+        }}
+      />
+      <Tabs.Screen
+        name="about"
+        options={{
+          title: "About",
+          tabBarIcon: ({ color, size }) => <Ionicons name="information-circle-outline" color={color} size={size} />
+        }}
+      />
+    </Tabs>
+  );
+}
+""",
+    "app/_layout.tsx": """import { Stack, useRouter, useSegments } from "expo-router";
+import { useEffect } from "react";
+import { SafeAreaProvider } from "react-native-safe-area-context";
+import { AuthProvider } from "../src/providers/AuthProvider";
+import { useAuth } from "../src/hooks/useAuth";
+import { useNotifications } from "../src/hooks/useNotifications";
+
+function RootNavigator() {
+  const { session, loading } = useAuth();
+  const segments = useSegments();
+  const router = useRouter();
+
+  useNotifications();
+
+  useEffect(() => {
+    if (loading) return;
+
+    const inAuthGroup = segments[0] === "(auth)";
+
+    if (!session && !inAuthGroup) {
+      router.replace("/(auth)/sign-in");
+    } else if (session && inAuthGroup) {
+      router.replace("/(tabs)");
+    }
+  }, [session, loading, segments, router]);
+
+  return (
+    <Stack screenOptions={{ headerTitleAlign: "center" }}>
+      <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen name="services/[slug]" options={{ title: "Service Detail" }} />
+      <Stack.Screen name="+not-found" />
+    </Stack>
+  );
+}
+
+export default function RootLayout() {
+  return (
+    <SafeAreaProvider>
+      <AuthProvider>
+        <RootNavigator />
+      </AuthProvider>
+    </SafeAreaProvider>
+  );
+}
+""",
+    "app/(auth)/_layout.tsx": """import { Stack } from "expo-router";
+
+export default function AuthLayout() {
+  return <Stack screenOptions={{ headerTitleAlign: "center" }} />;
+}
+""",
+    "app/(auth)/sign-in.tsx": """import { useState } from "react";
+import { Alert, Text } from "react-native";
+import { Link } from "expo-router";
+import Screen from "../../src/components/Screen";
+import SectionTitle from "../../src/components/SectionTitle";
+import AppInput from "../../src/components/AppInput";
+import AppButton from "../../src/components/AppButton";
+import { signIn } from "../../src/services/authService";
+
+export default function SignInScreen() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  const onSubmit = async () => {
+    const { error } = await signIn(email, password);
+    if (error) {
+      Alert.alert("Sign In Failed", error.message);
+    }
+  };
+
+  return (
+    <Screen>
+      <SectionTitle title="Sign In" subtitle="Access the Bank of Bacolod service catalog." />
+      <AppInput label="Email" value={email} onChangeText={setEmail} autoCapitalize="none" />
+      <AppInput label="Password" value={password} onChangeText={setPassword} secureTextEntry />
+      <AppButton title="Sign In" onPress={onSubmit} />
+      <Text style={{ marginTop: 16 }}>
+        No account? <Link href="/(auth)/sign-up">Create one</Link>
+      </Text>
+    </Screen>
+  );
+}
+""",
+    "app/(auth)/sign-up.tsx": """import { useState } from "react";
+import { Alert, Text } from "react-native";
+import { Link } from "expo-router";
+import Screen from "../../src/components/Screen";
+import SectionTitle from "../../src/components/SectionTitle";
+import AppInput from "../../src/components/AppInput";
+import AppButton from "../../src/components/AppButton";
+import { signUp } from "../../src/services/authService";
+
+export default function SignUpScreen() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  const onSubmit = async () => {
+    const { error } = await signUp(email, password);
+    if (error) {
+      Alert.alert("Sign Up Failed", error.message);
+      return;
+    }
+    Alert.alert("Success", "Account created. Please verify your email if required.");
+  };
+
+  return (
+    <Screen>
+      <SectionTitle title="Create Account" subtitle="Register to submit and track service inquiries." />
+      <AppInput label="Email" value={email} onChangeText={setEmail} autoCapitalize="none" />
+      <AppInput label="Password" value={password} onChangeText={setPassword} secureTextEntry />
+      <AppButton title="Create Account" onPress={onSubmit} />
+      <Text style={{ marginTop: 16 }}>
+        Already have an account? <Link href="/(auth)/sign-in">Sign in</Link>
+      </Text>
+    </Screen>
+  );
+}
+""",
+    "app/(tabs)/index.tsx": """import { Text, View } from "react-native";
+import Screen from "../../src/components/Screen";
+import SectionTitle from "../../src/components/SectionTitle";
+import StatCard from "../../src/components/StatCard";
+import ServiceCard from "../../src/components/ServiceCard";
+import LoadingState from "../../src/components/LoadingState";
+import EmptyState from "../../src/components/EmptyState";
+import { useCatalog } from "../../src/hooks/useCatalog";
+import { colors } from "../../src/theme/colors";
+
+export default function HomeScreen() {
+  const { data, loading } = useCatalog();
+  const featured = data.filter((item) => item.featured);
+
+  return (
+    <Screen>
+      <View
+        style={{
+          backgroundColor: colors.primaryDark,
+          borderRadius: 24,
+          padding: 20,
+          marginBottom: 20
+        }}
+      >
+        <Text style={{ color: "#fff", fontSize: 28, fontWeight: "700" }}>Bank of Bacolod</Text>
+        <Text style={{ color: "#dbeafe", marginTop: 10 }}>
+          Premium business services, cloud components, and AI agent environments.
+        </Text>
+      </View>
+
+      <SectionTitle title="Quick Stats" />
+      <View style={{ flexDirection: "row", justifyContent: "space-between", flexWrap: "wrap" }}>
+        <StatCard label="Services" value={`${data.length}`} />
+        <StatCard label="AI Agents" value="12" />
+        <StatCard label="Cloud" value="35+" />
+        <StatCard label="Regions" value="PH Grid" />
+      </View>
+
+      <SectionTitle title="Featured Services" />
+      {loading ? (
+        <LoadingState />
+      ) : featured.length === 0 ? (
+        <EmptyState message="No featured services available." />
+      ) : (
+        featured.map((item) => <ServiceCard key={item.id} item={item} />)
+      )}
+    </Screen>
+  );
+}
+""",
+    "app/(tabs)/categories.tsx": """import { useMemo, useState } from "react";
+import { Pressable, Text, TextInput, View } from "react-native";
+import Screen from "../../src/components/Screen";
+import SectionTitle from "../../src/components/SectionTitle";
+import ServiceCard from "../../src/components/ServiceCard";
+import LoadingState from "../../src/components/LoadingState";
+import EmptyState from "../../src/components/EmptyState";
+import { useCatalog } from "../../src/hooks/useCatalog";
+import { colors } from "../../src/theme/colors";
+
+const tabs = ["All", "Business Services", "Cloud Services", "AI Agents", "Environments"];
+
+export default function CategoriesScreen() {
+  const { data, loading } = useCatalog();
+  const [query, setQuery] = useState("");
+  const [selected, setSelected] = useState("All");
+
+  const filtered = useMemo(() => {
+    return data.filter((item) => {
+      const matchesCategory = selected === "All" || item.category === selected;
+      const q = query.toLowerCase();
+      const matchesQuery =
+        item.name.toLowerCase().includes(q) ||
+        item.provider.toLowerCase().includes(q) ||
+        item.region.toLowerCase().includes(q);
+      return matchesCategory && matchesQuery;
+    });
+  }, [data, query, selected]);
+
+  return (
+    <Screen>
+      <SectionTitle title="Category Explorer" subtitle="Browse curated catalog items by category." />
+
+      <TextInput
+        value={query}
+        onChangeText={setQuery}
+        placeholder="Search by service, provider, region..."
+        style={{
+          borderWidth: 1,
+          borderColor: colors.border,
+          backgroundColor: colors.surface,
+          borderRadius: 12,
+          paddingHorizontal: 14,
+          paddingVertical: 12,
+          marginBottom: 14
+        }}
+      />
+
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
+        {tabs.map((tab) => (
+          <Pressable
+            key={tab}
+            onPress={() => setSelected(tab)}
+            style={{
+              paddingHorizontal: 14,
+              paddingVertical: 10,
+              borderRadius: 999,
+              backgroundColor: selected === tab ? colors.primary : colors.surface,
+              borderWidth: 1,
+              borderColor: selected === tab ? colors.primary : colors.border
+            }}
+          >
+            <Text style={{ color: selected === tab ? "#fff" : colors.text, fontWeight: "600" }}>{tab}</Text>
+          </Pressable>
+        ))}
+      </View>
+
+      <Text style={{ marginBottom: 14, color: colors.muted }}>{filtered.length} results found</Text>
+
+      {loading ? (
+        <LoadingState />
+      ) : filtered.length === 0 ? (
+        <EmptyState message="No services matched your search." />
+      ) : (
+        filtered.map((item) => <ServiceCard key={item.id} item={item} />)
+      )}
+    </Screen>
+  );
+}
+""",
+    "app/(tabs)/cloud.tsx": """import { useState } from "react";
+import { Text, TextInput, View } from "react-native";
+import Screen from "../../src/components/Screen";
+import SectionTitle from "../../src/components/SectionTitle";
+import StatusBadge from "../../src/components/StatusBadge";
+import LoadingState from "../../src/components/LoadingState";
+import EmptyState from "../../src/components/EmptyState";
+import { useCloudComponents } from "../../src/hooks/useCloudComponents";
+import { colors } from "../../src/theme/colors";
+
+export default function CloudScreen() {
+  const { data, loading } = useCloudComponents();
+  const [query, setQuery] = useState("");
+
+  const filtered = data.filter((item) =>
+    [item.name, item.provider, item.region].some((v) => v.toLowerCase().includes(query.toLowerCase()))
+  );
+
+  return (
+    <Screen>
+      <SectionTitle title="Cloud Components" subtitle="Browse cloud infrastructure and service components." />
+
+      <TextInput
+        value={query}
+        onChangeText={setQuery}
+        placeholder="Search component, provider, region..."
+        style={{
+          borderWidth: 1,
+          borderColor: colors.border,
+          backgroundColor: colors.surface,
+          borderRadius: 12,
+          paddingHorizontal: 14,
+          paddingVertical: 12,
+          marginBottom: 14
+        }}
+      />
+
+      {loading ? (
+        <LoadingState />
+      ) : filtered.length === 0 ? (
+        <EmptyState message="No cloud components found." />
+      ) : (
+        filtered.map((item) => (
+          <View
+            key={item.id}
+            style={{
+              backgroundColor: colors.surface,
+              borderRadius: 16,
+              borderWidth: 1,
+              borderColor: colors.border,
+              padding: 16,
+              marginBottom: 12
+            }}
+          >
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
+              <View style={{ flex: 1, paddingRight: 10 }}>
+                <Text style={{ fontSize: 17, fontWeight: "700", color: colors.text }}>{item.name}</Text>
+                <Text style={{ marginTop: 8, color: colors.muted }}>{item.description}</Text>
+              </View>
+              <StatusBadge status={item.status} />
+            </View>
+
+            <Text style={{ marginTop: 12, color: colors.muted }}>Provider: {item.provider}</Text>
+            <Text style={{ marginTop: 4, color: colors.muted }}>Region: {item.region}</Text>
+          </View>
+        ))
+      )}
+    </Screen>
+  );
+}
+""",
+    "app/(tabs)/agents.tsx": """import { Text, View } from "react-native";
+import Screen from "../../src/components/Screen";
+import SectionTitle from "../../src/components/SectionTitle";
+import StatusBadge from "../../src/components/StatusBadge";
+import LoadingState from "../../src/components/LoadingState";
+import EmptyState from "../../src/components/EmptyState";
+import { useAgents } from "../../src/hooks/useAgents";
+import { colors } from "../../src/theme/colors";
+
+export default function AgentsScreen() {
+  const { data, loading } = useAgents();
+
+  return (
+    <Screen>
+      <SectionTitle title="Agent Environments" subtitle="Review available AI agent environments and their status." />
+
+      {loading ? (
+        <LoadingState />
+      ) : data.length === 0 ? (
+        <EmptyState message="No agent environments available." />
+      ) : (
+        data.map((item) => (
+          <View
+            key={item.id}
+            style={{
+              backgroundColor: colors.surface,
+              borderRadius: 16,
+              borderWidth: 1,
+              borderColor: colors.border,
+              padding: 16,
+              marginBottom: 12
+            }}
+          >
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
+              <View style={{ flex: 1, paddingRight: 10 }}>
+                <Text style={{ fontSize: 17, fontWeight: "700", color: colors.text }}>{item.name}</Text>
+                <Text style={{ marginTop: 6, color: colors.muted }}>{item.summary}</Text>
+              </View>
+              <StatusBadge status={item.status} />
+            </View>
+
+            <Text style={{ marginTop: 12, color: colors.muted }}>Type: {item.type}</Text>
+            <Text style={{ marginTop: 4, color: colors.muted }}>Agents: {item.agentCount}</Text>
+          </View>
+        ))
+      )}
+    </Screen>
+  );
+}
+""",
+    "app/(tabs)/request.tsx": """import { useState } from "react";
+import { Alert } from "react-native";
+import Screen from "../../src/components/Screen";
+import SectionTitle from "../../src/components/SectionTitle";
+import AppInput from "../../src/components/AppInput";
+import AppButton from "../../src/components/AppButton";
+import { submitServiceRequest } from "../../src/services/requestService";
+
+export default function RequestScreen() {
+  const [serviceName, setServiceName] = useState("");
+  const [customerName, setCustomerName] = useState("");
+  const [email, setEmail] = useState("");
+  const [notes, setNotes] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  const onSubmit = async () => {
+    if (!serviceName || !customerName || !email) {
+      Alert.alert("Missing Information", "Please fill in all required fields.");
+      return;
+    }
+
+      try {
+      setSubmitting(true);
+      await
