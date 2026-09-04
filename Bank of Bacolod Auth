@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bank of Bacolod Mobile Scaffold</title>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --panel: #111831;
+      --panel-2: #182244;
+      --text: #e5ecff;
+      --muted: #9fb0df;
+      --accent: #4f8cff;
+      --accent-2: #7aa8ff;
+      --border: #2a3868;
+      --success: #2fbf71;
+      --warn: #f4b740;
+      --danger: #ef5d5d;
+      --code-bg: #0a0f1f;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, Arial, sans-serif;
+      background: linear-gradient(180deg, #08101f 0%, #0b1020 100%);
+      color: var(--text);
+    }
+    .wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 32px 20px 60px;
+    }
+    .hero {
+      background: linear-gradient(135deg, var(--panel) 0%, var(--panel-2) 100%);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 28px;
+      margin-bottom: 24px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.25);
+    }
+    h1 {
+      margin: 0 0 10px;
+      font-size: 34px;
+      line-height: 1.1;
+    }
+    p {
+      color: var(--muted);
+      line-height: 1.6;
+      margin: 0;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 20px;
+    }
+    @media (min-width: 900px) {
+      .grid {
+        grid-template-columns: 320px 1fr;
+      }
+    }
+    .card {
+      background: rgba(17, 24, 49, 0.92);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 20px;
+    }
+    h2 {
+      margin: 0 0 14px;
+      font-size: 20px;
+    }
+    ul {
+      margin: 0;
+      padding-left: 18px;
+      color: var(--muted);
+    }
+    li { margin: 8px 0; }
+    .badge {
+      display: inline-block;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(79, 140, 255, .15);
+      color: var(--accent-2);
+      border: 1px solid rgba(79, 140, 255, .35);
+      font-size: 12px;
+      font-weight: 700;
+      margin: 0 8px 8px 0;
+    }
+    pre {
+      margin: 0;
+      padding: 18px;
+      overflow: auto;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      color: #dbe6ff;
+      font-size: 13px;
+      line-height: 1.55;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .toolbar {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin: 16px 0 0;
+    }
+    button {
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: var(--accent);
+      color: white;
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-weight: 700;
+    }
+    button.secondary {
+      background: transparent;
+      color: var(--text);
+    }
+    .note {
+      margin-top: 16px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .ok { color: var(--success); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <div class="badge">Expo Router</div>
+      <div class="badge">TypeScript</div>
+      <div class="badge">Supabase</div>
+      <div class="badge">Notifications</div>
+      <h1>Bank of Bacolod Mobile Scaffold</h1>
+      <p>
+        Your prompt appears truncated near <strong>app/(tabs)/cloud.tsx</strong>. This page preserves the provided scaffold
+        and highlights that the remaining codebase is incomplete in the source you supplied.
+      </p>
+      <div class="toolbar">
+        <button id="copyBtn">Copy Visible Scaffold</button>
+        <button class="secondary" id="downloadBtn">Download HTML Snapshot</button>
+      </div>
+      <div class="note">
+        Status: <span class="ok">Partial scaffold captured successfully</span>
+      </div>
+    </section>
+
+    <div class="grid">
+      <aside class="card">
+        <h2>Included Sections</h2>
+        <ul>
+          <li>Project structure</li>
+          <li>package.json</li>
+          <li>Environment and Expo config</li>
+          <li>Types and theme</li>
+          <li>Supabase and notifications</li>
+          <li>Auth provider and hooks</li>
+          <li>Services layer</li>
+          <li>Reusable components</li>
+          <li>Tabs layout and root layout</li>
+          <li>Auth screens</li>
+          <li>Home, Categories, partial Cloud screen</li>
+        </ul>
+      </aside>
+
+      <main class="card">
+        <h2>Captured Scaffold</h2>
+        <pre id="codeContent">Below is a production-ready Expo mobile app scaffold for Bank of Bacolod with:
+
+- Expo Router
+- TypeScript
+- Bottom tabs
+- Supabase integration
+- Expo Notifications setup
+- Auth screens
+- Catalog, cloud, agents, request flows
+- Reusable API/data layer
+- Env config
+- EAS-ready structure
+
+Project Structure:
+bank-of-bacolod-mobile/
+├── app/
+│   ├── _layout.tsx
+│   ├── +not-found.tsx
+│   ├── (auth)/
+│   │   ├── _layout.tsx
+│   │   ├── sign-in.tsx
+│   │   └── sign-up.tsx
+│   ├── (tabs)/
+│   │   ├── _layout.tsx
+│   │   ├── index.tsx
+│   │   ├── categories.tsx
+│   │   ├── cloud.tsx
+│   │   ├── agents.tsx
+│   │   ├── request.tsx
+│   │   └── about.tsx
+│   └── services/
+│       └── [slug].tsx
+├── src/
+│   ├── components/
+│   ├── constants/
+│   ├── hooks/
+│   ├── lib/
+│   ├── providers/
+│   ├── services/
+│   ├── theme/
+│   ├── types/
+│   └── utils/
+├── supabase/
+│   └── schema.sql
+├── .env.example
+├── app.json
+├── babel.config.js
+├── eas.json
+├── package.json
+└── tsconfig.json
+
+package.json, .env.bank-of-bacolod, app.json, eas.json, babel.config.js, tsconfig.json,
+types, theme, env, supabase, notifications, auth provider, services layer,
+hooks, reusable components, tab layout, root layout, auth screens, and main
+screens were provided in the prompt.
+
+The prompt is truncated at:
+
+app/(tabs)/cloud.tsx
+...
+        filtered.map((item) => (
+          &lt;View
+            key={item.id}
+            style={{
+              backgroundColor: colors.surface,
+
+09:17:50
+
+Because the source ends there, the following files are still missing from the provided input:
+- completion of app/(tabs)/cloud.tsx
+- app/(tabs)/agents.tsx
+- app/(tabs)/request.tsx
+- app/(tabs)/about.tsx
+- app/services/[slug].tsx
+- app/+not-found.tsx
+- src/constants/categories.ts
+- src/utils/format.ts
+- supabase/schema.sql
+- any omitted assets or remaining implementation details
+
+If you want the full production-ready scaffold generated as code files, provide the missing continuation or request a complete reconstruction from the described structure.</pre>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const copyBtn = document.getElementById("copyBtn");
+      const downloadBtn = document.getElementById("downloadBtn");
+      const code = document.getElementById("codeContent").textContent || "";
+
+      copyBtn.addEventListener("click", async () => {
+        try {
+          await navigator.clipboard.writeText(code);
+          copyBtn.textContent = "Copied";
+          setTimeout(() => {
+            copyBtn.textContent = "Copy Visible Scaffold";
+          }, 1200);
+        } catch (error) {
+          console.error("Copy failed", error);
+          alert("Unable to copy to clipboard.");
+        }
+      });
+
+      downloadBtn.addEventListener("click", () => {
+        try {
+          const html = "<!DOCTYPE html>\n" + document.documentElement.outerHTML;
+          const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = "bank-of-bacolod-mobile-scaffold.html";
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          URL.revokeObjectURL(url);
+        } catch (error) {
+          console.error("Download failed", error);
+          alert("Unable to download snapshot.");
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
